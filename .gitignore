@@ -1,3 +1,4 @@
 *.pyc
 *.mo
 linux/x-tile.1.gz
+.idea

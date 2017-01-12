@@ -26,6 +26,8 @@
 
 import gtk, gobject, gconf
 import os, sys, ctypes, webbrowser, time, subprocess
+import logging
+
 try:
     import appindicator
     HAS_APPINDICATOR = True
@@ -157,6 +159,21 @@ class InfoModel:
             self.liststore[iter][4] = False
             iter = self.liststore.iter_next(iter)
 
+    def get_windows_list(self):
+        """  Returns list of windows . works on CLI """
+        """ Enhance: merge into get_checked_windows_list below """
+        ret = [[], []]
+        tree_iter = self.liststore.get_iter_first()
+        screen = gtk.gdk.screen_get_default()
+        
+        while tree_iter != None:
+            win_id = self.liststore[tree_iter][1]
+            win_curr_monitor = screen.get_monitor_at_window(gtk.gdk.window_foreign_new(win_id))
+            ret[win_curr_monitor].append(win_id)
+            tree_iter = self.liststore.iter_next(tree_iter)
+        
+        return ret
+        
     def get_checked_windows_list(self, undo_ready=False):
         """Returns the list of the checked windows"""
         checked_windows_list = [[],[]]
@@ -991,7 +1008,12 @@ class XTile:
     def tile_horizontally(self, *args):
         """Tile the Checked Windows Horizontally"""
         self.gconf_client.set_string(cons.GCONF_LATEST_TILING % glob.screen_index, "h")
-        checked_windows_list = self.store.get_checked_windows_list(True)
+        if self.cmd_line_only:
+            checked_windows_list = self.store.get_windows_list()
+        else:
+            checked_windows_list = self.store.get_checked_windows_list(True)
+        # logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s')
+        # logging.debug(checked_windows_list)
         tilings.tile_horizontally(checked_windows_list, glob.monitors_areas, self.get_dest_ws())
         self.check_exit_after_tile()
 
