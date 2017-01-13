@@ -54,6 +54,7 @@ class InfoModel:
         self.process_picklist = set()
         self.process_blacklist = set()
         self.process_whitelist = set()
+        self.cmd_line_only = False
 
     def load_model(self, appletobj):
         """Populates the gtk.ListStore"""
@@ -159,21 +160,6 @@ class InfoModel:
             self.liststore[iter][4] = False
             iter = self.liststore.iter_next(iter)
 
-    def get_windows_list(self):
-        """  Returns list of windows . works on CLI """
-        """ Enhance: merge into get_checked_windows_list below """
-        ret = [[], []]
-        tree_iter = self.liststore.get_iter_first()
-        screen = gtk.gdk.screen_get_default()
-        
-        while tree_iter != None:
-            win_id = self.liststore[tree_iter][1]
-            win_curr_monitor = screen.get_monitor_at_window(gtk.gdk.window_foreign_new(win_id))
-            ret[win_curr_monitor].append(win_id)
-            tree_iter = self.liststore.iter_next(tree_iter)
-        
-        return ret
-        
     def get_checked_windows_list(self, undo_ready=False):
         """Returns the list of the checked windows"""
         checked_windows_list = [[],[]]
@@ -181,12 +167,17 @@ class InfoModel:
             # undo_snap_vec is 0:win_id 1:is_maximized 2:x 3:y 4:width 5:height
             undo_snap_vec = []
         tree_iter = self.liststore.get_iter_first()
+        screen = gtk.gdk.screen_get_default()
         while tree_iter != None:
             win_id = self.liststore[tree_iter][1]
-            if self.liststore[tree_iter][0] == True:
-                checked_windows_list[0].append(win_id)
-            elif self.liststore[tree_iter][4] == True:
-                checked_windows_list[1].append(win_id)
+            if self.cmd_line_only:
+                win_curr_monitor = screen.get_monitor_at_window(gtk.gdk.window_foreign_new(win_id))
+                checked_windows_list[win_curr_monitor].append(win_id)
+            else:     
+                if self.liststore[tree_iter][0] == True:
+                    checked_windows_list[0].append(win_id)
+                elif self.liststore[tree_iter][4] == True:
+                    checked_windows_list[1].append(win_id)
             if undo_ready and (self.liststore[tree_iter][0] or self.liststore[tree_iter][4]):
                 if support.is_window_Vmax(win_id) or support.is_window_Hmax(win_id): is_maximized = 1
                 else: is_maximized = 0
@@ -1008,10 +999,7 @@ class XTile:
     def tile_horizontally(self, *args):
         """Tile the Checked Windows Horizontally"""
         self.gconf_client.set_string(cons.GCONF_LATEST_TILING % glob.screen_index, "h")
-        if self.cmd_line_only:
-            checked_windows_list = self.store.get_windows_list()
-        else:
-            checked_windows_list = self.store.get_checked_windows_list(True)
+        checked_windows_list = self.store.get_checked_windows_list(True)
         # logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s')
         # logging.debug(checked_windows_list)
         tilings.tile_horizontally(checked_windows_list, glob.monitors_areas, self.get_dest_ws())

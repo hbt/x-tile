@@ -69,6 +69,7 @@ elif arg in cons.CMD_LINE_ACTIONS:
     x = core.XTile(core.InfoModel())
     x.launch_application()
     x.cmd_line_only = True
+    x.store.cmd_line_only = True
     if arg not in ["z", "i", "y"]:
         x.reload_windows_list()
         x.flag_all_rows()
