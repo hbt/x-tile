@@ -26,6 +26,7 @@
 
 import gtk, gobject, gconf
 import os, sys, ctypes, webbrowser, time, subprocess
+import json
 import logging
 
 try:
@@ -162,36 +163,42 @@ class InfoModel:
 
     def get_checked_windows_list(self, undo_ready=False):
         """Returns the list of the checked windows"""
-        checked_windows_list = [[],[]]
-        if undo_ready:
-            # undo_snap_vec is 0:win_id 1:is_maximized 2:x 3:y 4:width 5:height
-            undo_snap_vec = []
-        tree_iter = self.liststore.get_iter_first()
-        screen = gtk.gdk.screen_get_default()
-        while tree_iter != None:
-            win_id = self.liststore[tree_iter][1]
-            if self.cmd_line_only:
-                win_curr_monitor = screen.get_monitor_at_window(gtk.gdk.window_foreign_new(win_id))
-                checked_windows_list[win_curr_monitor].append(win_id)
-            else:     
-                if self.liststore[tree_iter][0] == True:
-                    checked_windows_list[0].append(win_id)
-                elif self.liststore[tree_iter][4] == True:
-                    checked_windows_list[1].append(win_id)
-            if undo_ready and (self.liststore[tree_iter][0] or self.liststore[tree_iter][4]):
-                if support.is_window_Vmax(win_id) or support.is_window_Hmax(win_id): is_maximized = 1
-                else: is_maximized = 0
-                win_geom = support.get_geom(win_id)
-                undo_snap_vec.append([  str(win_id),
-                                        str(is_maximized),
-                                        str(win_geom[0]),
-                                        str(win_geom[1]),
-                                        str(win_geom[2]),
-                                        str(win_geom[3])  ])
-            tree_iter = self.liststore.iter_next(tree_iter)
-        if undo_ready and undo_snap_vec:
-            support.undo_snap_write(self.gconf_client, undo_snap_vec)
+        f = open("/tmp/x-tile-wins", "r")
+        ret = f.read()
+        f.close()
+        arr = json.loads(ret)
+        checked_windows_list = arr
         return checked_windows_list
+        
+        # if undo_ready:
+        #     # undo_snap_vec is 0:win_id 1:is_maximized 2:x 3:y 4:width 5:height
+        #     undo_snap_vec = []
+        # tree_iter = self.liststore.get_iter_first()
+        # screen = gtk.gdk.screen_get_default()
+        # while tree_iter != None:
+        #     win_id = self.liststore[tree_iter][1]
+        #     if self.cmd_line_only:
+        #         win_curr_monitor = screen.get_monitor_at_window(gtk.gdk.window_foreign_new(win_id))
+        #         checked_windows_list[win_curr_monitor].append(win_id)
+        #     else:     
+        #         if self.liststore[tree_iter][0] == True:
+        #             checked_windows_list[0].append(win_id)
+        #         elif self.liststore[tree_iter][4] == True:
+        #             checked_windows_list[1].append(win_id)
+        #     if undo_ready and (self.liststore[tree_iter][0] or self.liststore[tree_iter][4]):
+        #         if support.is_window_Vmax(win_id) or support.is_window_Hmax(win_id): is_maximized = 1
+        #         else: is_maximized = 0
+        #         win_geom = support.get_geom(win_id)
+        #         undo_snap_vec.append([  str(win_id),
+        #                                 str(is_maximized),
+        #                                 str(win_geom[0]),
+        #                                 str(win_geom[1]),
+        #                                 str(win_geom[2]),
+        #                                 str(win_geom[3])  ])
+        #     tree_iter = self.liststore.iter_next(tree_iter)
+        # if undo_ready and undo_snap_vec:
+        #     support.undo_snap_write(self.gconf_client, undo_snap_vec)
+        # return checked_windows_list
 
     def close_checked_windows(self):
         """Closes the checked windows and removes the rows from the model"""

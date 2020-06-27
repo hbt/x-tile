@@ -27,6 +27,7 @@
 
 import sys, os, gettext, ctypes, ctypes.util, locale
 import gtk, gconf
+import subprocess
 import __builtin__
 
 if os.path.isfile('modules/globs.py'): MODULES_PATH = 'modules/'
@@ -58,6 +59,13 @@ try:
 except: print "libc.prctl not available, the process name will be python and not x-tile"
 
 if len(sys.argv) < 2: sys.argv.append("w")
+
+
+ret = subprocess.check_output(['hbt-cli', 'wm-get-related-window-ids'])
+f = open("/tmp/x-tile-wins", "w")
+f.write(ret)
+f.close()
+
 
 arg = sys.argv[1]
 if arg == "w":
